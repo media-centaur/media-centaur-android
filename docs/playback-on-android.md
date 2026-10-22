@@ -50,8 +50,46 @@ does not do.
 
 **Audio.** DTS-HD MA 5.1 is decoded by FFmpeg and output as 16-bit PCM,
 6 channels, 48 kHz through `ao=audiotrack` (`audio-params/format=s32p`
-in, `audio-out-params/format=s16` out). Bitstream passthrough
-(`audio-spdif`) is untested. mpv logs an audio underrun at each start.
+in, `audio-out-params/format=s16` out). mpv logs an audio underrun at
+each start.
+
+Bitstream passthrough is possible in principle and untested on this
+panel: `ao_audiotrack.c` (mpv 0.41) opens the track with
+`ENCODING_IEC61937` for an spdif format (`af_fmt_is_spdif`), logging
+"spdif passthrough not supported by API" when the device refuses; the
+manual's `--audio-spdif=<codecs>` takes `ac3`, `dts`, `dts-hd`, `eac3`,
+`truehd` and "works for both classic S/PDIF and HDMI" ("receiver and OS
+support varies"). What the link can carry is physics, not software:
+optical S/PDIF carries PCM 2.0, AC3 and the DTS core (lossy 5.1) only;
+DTS-HD MA and TrueHD (lossless) need HDMI eARC. The owner's speakers are
+on the TV's optical output, so on that setup "full fidelity" is the
+DTS core or AC3 bitstream passed through untouched, and lossless audio
+becomes possible only with an eARC receiver. Whether the Sony passes an
+app's IEC61937 stream to optical, or re-encodes multichannel PCM to AC3
+itself, is the measurement to make (`--audio-spdif=ac3,dts` over the
+channel, then the receiver's own display).
+
+## A page over the native video keeps the video HDR
+
+Measured 2026-10-22 with a build that left the WebView visible and
+transparent during a viewing, a label injected into the page while a
+4K HDR remux played on `mediacodec_embed`: SurfaceFlinger composited
+both layers in hardware. The video layer stayed `composition
+type=DEVICE`, `dataspace=BT2020_ITU_PQ`, `hdr metadata types=3`; the
+page layer (1920×1080, `blend=PREMULTIPLIED`) was also `DEVICE`; no
+client (GPU) composition was forced and `frame-drop-count` stayed 0.
+The page's computed backgrounds were `rgba(0, 0, 0, 0)` (a stylesheet
+with `!important`, the WebView's own background `TRANSPARENT`), yet
+`screencap` showed black where the video should be while the page was
+visible, although it captures the embedded video when the WebView is
+`GONE`. Whether the panel itself showed the video under the label is
+the owner's observation to record here (asked 2026-10-22). If it did,
+the host's UI can sit over the native video as the TV's OSD without
+touching the picture, which is how Kodi and ExoPlayer-based players
+draw menus over HDR video; if it did not, the WebView's transparency
+over a SurfaceView is the next thing to fix (`setLayerType`, the
+window's pixel format) before the design can rely on it. What the
+WebView costs while idle over video is unmeasured.
 
 ## How the surface reaches mpv
 
