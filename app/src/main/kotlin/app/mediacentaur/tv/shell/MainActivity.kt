@@ -92,12 +92,16 @@ class MainActivity : Activity() {
         Log.i(if (viewing) "shell: viewing started, page stays up" else "shell: viewing ended")
     }
 
+    // Back and Menu never reach the WebView as key events, so the shell hands
+    // them to the page itself; every other key the WebView delivers as is.
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (event.keyCode == KeyEvent.KEYCODE_BACK && webView.visibility == View.VISIBLE) {
-            if (event.action == KeyEvent.ACTION_DOWN) shell.back()
-            return true
+        if (webView.visibility != View.VISIBLE) return super.dispatchKeyEvent(event)
+        val down = event.action == KeyEvent.ACTION_DOWN
+        return when (event.keyCode) {
+            KeyEvent.KEYCODE_BACK -> { if (down) shell.back(); true }
+            KeyEvent.KEYCODE_MENU -> { if (down) shell.menu(); true }
+            else -> super.dispatchKeyEvent(event)
         }
-        return super.dispatchKeyEvent(event)
     }
 
     override fun onDestroy() {
