@@ -12,7 +12,7 @@ class IpcTest {
     private class FakeMpv : Mpv {
         val commands = mutableListOf<List<String>>()
         val observed = mutableListOf<Pair<String, Int>>()
-        val set = mutableListOf<Pair<String, String>>()
+        val set = mutableListOf<Pair<String, Any>>()
         val strings = mutableMapOf<String, String>()
         val doubles = mutableMapOf<String, Double>()
         var stops = 0
@@ -23,6 +23,9 @@ class IpcTest {
         override fun getLong(name: String): Long? = null
         override fun getBoolean(name: String): Boolean? = null
         override fun setString(name: String, value: String) { set += name to value }
+        override fun setBoolean(name: String, value: Boolean) { set += name to value }
+        override fun setLong(name: String, value: Long) { set += name to value }
+        override fun setDouble(name: String, value: Double) { set += name to value }
         override fun observe(name: String, format: Int) { observed += name to format }
         override fun stop() { stops++ }
     }
@@ -92,10 +95,16 @@ class IpcTest {
     }
 
     @Test
-    fun `set_property and loadfile reach mpv as strings`() {
+    fun `set_property keeps the JSON value's type and loadfile reaches mpv as strings`() {
         val rig = Rig()
         rig.send("""{"command":["set_property","keep-open","yes"]}""")
         assertEquals("keep-open" to "yes", rig.mpv.set.single())
+        rig.send("""{"command":["set_property","pause",false]}""")
+        assertEquals("pause" to false, rig.mpv.set.last())
+        rig.send("""{"command":["set_property","volume",50]}""")
+        assertEquals("volume" to 50L, rig.mpv.set.last())
+        rig.send("""{"command":["set_property","speed",1.5]}""")
+        assertEquals("speed" to 1.5, rig.mpv.set.last())
         rig.send("""{"command":["loadfile","http://h/media/1?t=x","replace",-1,"start=12.5"]}""")
         assertEquals(listOf("loadfile", "http://h/media/1?t=x", "replace", "-1", "start=12.5"), rig.mpv.commands.single())
         rig.send("""{"command":["change-list","script-opts","append","k=v"]}""")

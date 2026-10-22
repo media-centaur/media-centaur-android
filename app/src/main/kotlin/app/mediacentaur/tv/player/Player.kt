@@ -71,6 +71,10 @@ class Player(
     override fun getLong(name: String): Long? = lib.getPropertyInt(name)?.toLong()
     override fun getBoolean(name: String): Boolean? = lib.getPropertyBoolean(name)
     override fun setString(name: String, value: String) = lib.setPropertyString(name, value)
+    override fun setBoolean(name: String, value: Boolean) = lib.setPropertyBoolean(name, value)
+    // The binding's integer setter takes an Int; mpv's int64 properties the host sets fit.
+    override fun setLong(name: String, value: Long) = lib.setPropertyInt(name, value.toInt())
+    override fun setDouble(name: String, value: Double) = lib.setPropertyDouble(name, value)
     override fun observe(name: String, format: Int) = lib.observeProperty(name, format)
 
     override fun stop() {

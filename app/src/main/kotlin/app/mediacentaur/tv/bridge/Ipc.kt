@@ -55,7 +55,15 @@ class Ipc(
                     if (value == null) reply(request, "property unavailable", null) else reply(request, "success", value)
                 }
                 "set_property" -> {
-                    mpv.setString(args[1].toString(), args[2].toString())
+                    // The JSON value's type picks the setter, as mpv's own IPC does: a
+                    // boolean as a string ("false") is rejected by flag options.
+                    val property = args[1].toString()
+                    when (val value = args[2]) {
+                        is Boolean -> mpv.setBoolean(property, value)
+                        is Int, is Long -> mpv.setLong(property, (value as Number).toLong())
+                        is Number -> mpv.setDouble(property, value.toDouble())
+                        else -> mpv.setString(property, value.toString())
+                    }
                     reply(request, "success", null)
                 }
                 "quit", "stop" -> {

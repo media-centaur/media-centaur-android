@@ -12,6 +12,9 @@ interface Mpv {
     fun getLong(name: String): Long?
     fun getBoolean(name: String): Boolean?
     fun setString(name: String, value: String)
+    fun setBoolean(name: String, value: Boolean)
+    fun setLong(name: String, value: Long)
+    fun setDouble(name: String, value: Double)
     fun observe(name: String, format: Int)
 
     /** A deliberate stop of the current file; remembered so the end-file reason is `stop`. */
