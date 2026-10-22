@@ -1,0 +1,14 @@
+# Toolchain for the Media Centaur TV app. `mise` activates this in any shell
+# inside the repository, and ~/scripts/agents/mc-tv runs every tool through
+# `mise -C <repo> exec`, so the JDK, the SDK location and the SDK tools on PATH
+# have this one source. Install the SDK itself with `mc-tv setup`.
+[tools]
+java = "temurin-21"
+
+[env]
+ANDROID_HOME = "{{env.HOME}}/Android/Sdk"
+_.path = [
+  "{{env.HOME}}/Android/Sdk/platform-tools",
+  "{{env.HOME}}/Android/Sdk/emulator",
+  "{{env.HOME}}/Android/Sdk/cmdline-tools/latest/bin",
+]
