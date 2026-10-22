@@ -78,18 +78,32 @@ both layers in hardware. The video layer stayed `composition
 type=DEVICE`, `dataspace=BT2020_ITU_PQ`, `hdr metadata types=3`; the
 page layer (1920×1080, `blend=PREMULTIPLIED`) was also `DEVICE`; no
 client (GPU) composition was forced and `frame-drop-count` stayed 0.
-The page's computed backgrounds were `rgba(0, 0, 0, 0)` (a stylesheet
-with `!important`, the WebView's own background `TRANSPARENT`), yet
-`screencap` showed black where the video should be while the page was
-visible, although it captures the embedded video when the WebView is
-`GONE`. Whether the panel itself showed the video under the label is
-the owner's observation to record here (asked 2026-10-22). If it did,
-the host's UI can sit over the native video as the TV's OSD without
-touching the picture, which is how Kodi and ExoPlayer-based players
-draw menus over HDR video; if it did not, the WebView's transparency
-over a SurfaceView is the next thing to fix (`setLayerType`, the
-window's pixel format) before the design can rely on it. What the
-WebView costs while idle over video is unmeasured.
+The first three attempts showed the label over **black** on the panel
+and in `screencap`, with the page's computed backgrounds already
+`rgba(0, 0, 0, 0)`. Three opaque paints in the app were covering the
+player's surface, and all three had to go (verified one window at a
+time, the owner watching the panel):
+
+1. the root `FrameLayout`'s `android:background="@android:color/black"`
+   and the WebView's own XML black background — any View that paints
+   opaque pixels over the SurfaceView's bounds hides it, because the
+   window's surface sits above the player's;
+2. the theme's `android:windowBackground` black (now transparent; the
+   host-address screen carries its own black background instead);
+3. **Chromium's base background colour.** A WebView's transparency is
+   set only by `WebView.setBackgroundColor(Color.TRANSPARENT)` in code;
+   an XML `android:background` never reaches Chromium, which then
+   paints its own base colour — a dark grey under the app's dark
+   theme (algorithmic darkening), not black, which is what gave it away
+   in the capture.
+
+With those gone (and `window.setFormat(PixelFormat.TRANSLUCENT)` set
+explicitly), the label sits over the playing 4K HDR video on the panel
+and in `screencap`; the video layer stays `DEVICE`-composited and
+`BT2020_ITU_PQ`. So the host's UI can be the TV's OSD over the native
+video without touching the picture, which is how Kodi and
+ExoPlayer-based players draw menus over HDR video. What the WebView
+costs while idle over video is unmeasured.
 
 ## How the surface reaches mpv
 

@@ -33,6 +33,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.setFormat(android.graphics.PixelFormat.TRANSLUCENT)
         setContentView(R.layout.activity_main)
         webView = findViewById(R.id.web_view)
         addressScreen = findViewById(R.id.address_screen)

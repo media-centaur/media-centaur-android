@@ -21,6 +21,9 @@ class Shell(private val webView: WebView, private val onPaired: () -> Unit) {
     init {
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
         CookieManager.getInstance().setAcceptCookie(true)
+        // Chromium learns transparency only from this call, never from the XML background;
+        // without it the WebView paints its own base colour over the player's surface.
+        webView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
