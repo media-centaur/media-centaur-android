@@ -13,14 +13,15 @@ import app.mediacentaur.tv.Log
 import app.mediacentaur.tv.R
 import app.mediacentaur.tv.bridge.Channel
 import app.mediacentaur.tv.player.Player
-import app.mediacentaur.tv.player.RemoteKeys
 
 /**
  * The app's one activity: the host-address screen until an address is
  * known, then the WebView shell over an always-attached player surface.
- * While a file plays the WebView hides and the remote's keys go to mpv;
- * otherwise they go to the page. Launch with `--es host <url>` to set the
- * address without typing (`mc-tv launch --host`).
+ * The page stays up during a viewing — it is the TV's OSD — and every
+ * remote key goes to it; Back goes to the page as its BACK action, which
+ * closes an open menu or stops the viewing through the host. Nothing is
+ * sent to mpv from here. Launch with `--es host <url>` to set the address
+ * without typing (`mc-tv launch --host`).
  */
 class MainActivity : Activity() {
     private lateinit var hostAddress: HostAddress
@@ -92,16 +93,8 @@ class MainActivity : Activity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        val down = event.action == KeyEvent.ACTION_DOWN
-        if (player.viewing) {
-            if (down) {
-                if (event.keyCode == KeyEvent.KEYCODE_BACK) player.stop()
-                else RemoteKeys.name(event.keyCode)?.let(player::keypress)
-            }
-            return true
-        }
         if (event.keyCode == KeyEvent.KEYCODE_BACK && webView.visibility == View.VISIBLE) {
-            if (down) shell.back()
+            if (event.action == KeyEvent.ACTION_DOWN) shell.back()
             return true
         }
         return super.dispatchKeyEvent(event)

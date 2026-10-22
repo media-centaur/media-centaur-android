@@ -6,16 +6,18 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import app.mediacentaur.tv.Log
 import dev.jdtech.mpv.MPVLib
-import java.io.File
 
 /**
  * The one libmpv instance for the app's life, on a surface that stays
- * attached. Instance options are the TV's (decode and output paths, the
- * cache, the bundled scripts and `input.conf` copied from assets); session
- * options arrive from the host over the channel. [viewing] is true from a
- * file's start until mpv is idle again, which is when the shell shows the
- * page; a stop requested here (Back) or by the host (`quit`) ends with
+ * attached. Instance options are the TV's: the native output path
+ * (`vo=mediacodec_embed` — the decoder writes to the surface, the panel
+ * gets native resolution and HDR10, and mpv draws nothing; the host's page
+ * over the surface is the OSD), the decoder, the cache. Every per-viewing
+ * option arrives from the host on the `loadfile` itself, so nothing here
+ * carries over between viewings. [viewing] is true from a file's start
+ * until mpv is idle again; a stop asked for by the host (`quit`) ends with
  * reason `stop`, which the binding does not forward and [Player] supplies.
+ * No key reaches mpv: the remote's keys go to the page.
  */
 class Player(
     context: Context,
@@ -31,8 +33,7 @@ class Player(
     @Volatile private var stopRequested = false
 
     init {
-        val mpvDir = Assets.sync(context, "mpv")
-        for ((name, value) in instanceOptions(mpvDir)) lib.setOptionString(name, value)
+        for ((name, value) in instanceOptions()) lib.setOptionString(name, value)
         lib.addObserver(this)
         lib.addLogObserver(this)
         lib.init()
@@ -41,19 +42,15 @@ class Player(
         Log.i("player: libmpv ${lib.getPropertyString("mpv-version")}")
     }
 
-    private fun instanceOptions(mpvDir: File): List<Pair<String, String>> = listOf(
+    private fun instanceOptions(): List<Pair<String, String>> = listOf(
         "config" to "no",
         "idle" to "yes",
         "force-window" to "no",
-        "vo" to "gpu",
-        "gpu-context" to "android",
-        "opengl-es" to "yes",
-        "hwdec" to "mediacodec,mediacodec-copy",
+        "vo" to "mediacodec_embed",
+        "hwdec" to "mediacodec",
         "hwdec-codecs" to "h264,hevc,mpeg4,mpeg2video,vp8,vp9,av1",
         "ao" to "audiotrack,opensles",
         "input-default-bindings" to "no",
-        "input-conf" to File(mpvDir, "input.conf").path,
-        "script" to File(mpvDir, "scripts/media-centaur").path,
         "cache" to "yes",
         "demuxer-max-bytes" to (150L * 1024 * 1024).toString(),
         "demuxer-readahead-secs" to "20",
@@ -82,8 +79,6 @@ class Player(
         lib.command(arrayOf("stop"))
     }
 
-    fun keypress(name: String) = lib.command(arrayOf("keypress", name))
-
     fun destroy() {
         lib.removeObserver(this)
         lib.removeLogObserver(this)
@@ -95,12 +90,12 @@ class Player(
     override fun surfaceCreated(holder: SurfaceHolder) {
         lib.attachSurface(holder.surface)
         lib.setOptionString("force-window", "yes")
-        lib.setPropertyString("vo", "gpu")
+        lib.setPropertyString("vo", "mediacodec_embed")
     }
 
-    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-        lib.setPropertyString("android-surface-size", "${width}x$height")
-    }
+    // The native path needs no surface size: the decoder writes the video's
+    // own size and the compositor scales it to the panel.
+    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         lib.setPropertyString("vo", "null")

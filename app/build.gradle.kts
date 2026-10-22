@@ -10,34 +10,6 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
-/**
- * The host's bundled mpv scripts (`priv/mpv/scripts/media-centaur`) run
- * unmodified inside the TV's libmpv. They have one source, the host
- * checkout named by `mediaCentaurHost` in gradle.properties, and are copied
- * into this build's assets rather than committed here.
- */
-abstract class CopyBundledScripts : DefaultTask() {
-    @get:InputDirectory
-    @get:PathSensitive(PathSensitivity.RELATIVE)
-    abstract val source: DirectoryProperty
-
-    @get:OutputDirectory
-    abstract val outputDir: DirectoryProperty
-
-    @TaskAction
-    fun copy() {
-        val target = outputDir.get().dir("mpv/scripts/media-centaur").asFile
-        target.deleteRecursively()
-        source.get().asFile.copyRecursively(target, overwrite = true)
-    }
-}
-
-val copyBundledScripts by tasks.registering(CopyBundledScripts::class) {
-    val host = providers.gradleProperty("mediaCentaurHost").get()
-    source.set(rootProject.layout.projectDirectory.dir("$host/priv/mpv/scripts/media-centaur"))
-    outputDir.set(layout.buildDirectory.dir("bundledScripts"))
-}
-
 android {
     namespace = "app.mediacentaur.tv"
     compileSdk = 36
@@ -63,12 +35,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-}
-
-androidComponents {
-    onVariants { variant ->
-        variant.sources.assets?.addGeneratedSourceDirectory(copyBundledScripts, CopyBundledScripts::outputDir)
     }
 }
 
