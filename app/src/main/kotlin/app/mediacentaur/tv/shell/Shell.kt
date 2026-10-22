@@ -65,9 +65,14 @@ class Shell(private val webView: WebView, private val onPaired: () -> Unit) {
 
     fun menu() = key("ContextMenu")
 
+    // Dispatched on what a real key press targets — the focused element, or
+    // <body> when nothing is focused — never on the document itself: the
+    // page's keyboard source reads the event's target as an element and a
+    // document-targeted keydown threw before the key was seen (the Sony,
+    // 2026-10-22).
     private fun key(name: String) {
         webView.evaluateJavascript(
-            "document.dispatchEvent(new KeyboardEvent('keydown', {key: '$name', bubbles: true, cancelable: true}))",
+            "(document.activeElement || document.body).dispatchEvent(new KeyboardEvent('keydown', {key: '$name', bubbles: true, cancelable: true}))",
             null,
         )
     }
