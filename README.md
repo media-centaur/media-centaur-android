@@ -7,7 +7,11 @@ decides.
 
 This is the contributor guide. The contract both codebases follow is the
 host repository's `docs/superpowers/specs/2026-10-22-remote-players-protocol-design.md`;
-the rollout is its `campaigns/remote-players.md`.
+the rollout is its `campaigns/remote-players.md`. What is known about
+libmpv on the TV itself — the two render paths, HDR, resolution, audio,
+throughput, the long-lived instance's pitfalls, what to sample — is
+[`docs/playback-on-android.md`](docs/playback-on-android.md); add to it
+whenever a measurement settles a question.
 
 ## Toolchain
 
