@@ -147,6 +147,24 @@ the channel is for the player's life, which is why the host now sends a
 viewing's options per file on the `loadfile` (campaign decision,
 2026-10-22).
 
+**Why the passthrough track was refused (read from the TV's settings
+over adb the same day).** Android's *Select formats* (Display & Sound →
+Advanced sound settings) is *Automatic* and lists every surround format
+as *Disabled*: the TV reports no encoded format for its current output.
+The Sony page behind that (Settings → Display & Sound → Audio output,
+`com.sony.dtv.configsettings/.AudioSystemSettingsActivity`; it draws
+over the protected TV input, so `screencap` is blank and `uiautomator
+dump` is the way to read it) shows *Speakers: TV speakers*, *eARC mode:
+Off*, *Digital audio out: PCM*, *Pass through mode: Off*, and the
+*Digital audio out* row is disabled (`enabled="false"`): on this Sony it
+is adjustable only with *Speakers* set to *Audio system*. So the
+passthrough test needs the TV's speaker setting changed first, which
+moves the TV's own sound to the external system — the owner's call.
+The Android-only alternative, *Select formats: Manual*
+(`settings put global encoded_surround_output 3` plus
+`encoded_surround_output_enabled_formats`), makes Android accept the
+IEC61937 track but leaves Sony's digital output on PCM.
+
 **Rig note.** `mc-tv launch` on an app that is already running does not
 reload the page (`am start` on the running activity): injected elements
 from an earlier window survive. `mc-tv stop` first for a clean page and
