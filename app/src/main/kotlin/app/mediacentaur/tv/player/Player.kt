@@ -134,11 +134,11 @@ class Player(
         }
     }
 
-    private fun endReason(): String = when {
-        stopRequested -> "stop"
-        lib.getPropertyBoolean("eof-reached") == true -> "eof"
-        else -> "error"
-    }
+    // The binding drops mpv's reason. A stop asked for here or by the host is
+    // `stop`; anything else is the file running out (`eof-reached` is not set
+    // when mpv moves straight into the next playlist entry), and the host
+    // treats every reason but stop/quit alike.
+    private fun endReason(): String = if (stopRequested) "stop" else "eof"
 
     private fun setViewing(value: Boolean) {
         if (viewing == value) return

@@ -2,6 +2,7 @@ package app.mediacentaur.tv.shell
 
 import android.net.Uri
 import android.webkit.CookieManager
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -34,6 +35,13 @@ class Shell(private val webView: WebView, private val onPaired: () -> Unit) {
 
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
                 if (request.isForMainFrame) Log.w("page failed: ${request.url} — ${error.description}")
+            }
+
+            // A dead renderer must not take the app (and a viewing) down: reload the page instead.
+            override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
+                Log.w("page renderer gone (crashed: ${detail.didCrash()}); reloading")
+                view.post { view.reload() }
+                return true
             }
         }
     }
