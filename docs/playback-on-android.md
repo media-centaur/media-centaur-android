@@ -6,7 +6,7 @@ claim about mpv cites the manual or the binding's source. Add to this
 file whenever a measurement or a reading settles a question; the host
 repository's campaign file records the decisions taken from these facts.
 
-Last verified 2026-10-22. Test device: Sony Bravia XR-42A90K, Android 12
+Last verified 2026-10-22 (the page-as-OSD section added the same day). Test device: Sony Bravia XR-42A90K, Android 12
 (API 31), MediaTek MT5895, 32-bit (`armeabi-v7a`), WebView 154, a 4K
 panel whose Android UI runs at a 1080p override, on WiFi (`eth0` present,
 unplugged). Embedded player: `dev.jdtech.mpv:libmpv:1.0.0` = mpv 0.41.0,
@@ -104,6 +104,53 @@ and in `screencap`; the video layer stays `DEVICE`-composited and
 video without touching the picture, which is how Kodi and
 ExoPlayer-based players draw menus over HDR video. What the WebView
 costs while idle over video is unmeasured.
+
+## The page as the OSD: what it costs, and how fast a key comes back
+
+Measured 2026-10-22 on the Sony with the 4K HDR remux playing on
+`mediacodec_embed` and the WebView visible and transparent over it (the
+`onViewingChanged` change in this repository), `dumpsys gfxinfo` reset
+before each 10 s phase and `top -b -n 1` at its end:
+
+| Page content over the video | Page frames in 10 s | App CPU | SurfaceFlinger | `frame-drop-count` |
+|---|---|---|---|---|
+| nothing (cleared) | 0 | 35 % | 6 % | 0 |
+| a static OSD bar (title, progress, time) | 0 | 30 % | 7 % | 0 |
+| the bar ticking once a second + a subtitle line every 2 s | 10, at 8–9 ms | 33 % | 7 % | 0 |
+| a 60 fps `transform` animation | 487, 26 % janky, 48 ms median | 65 % | 19 % | 0 |
+
+The video never drops a frame; the page does. So an OSD that changes at
+most once a second is free on this Mali, and a continuously animating
+one is not: the host's viewing layer updates at 1 Hz and animates
+nothing continuously (a short opacity fade is the ceiling).
+
+Round trips, eight samples each: host → channel → libmpv → host
+(`get_property`) 2.7–7.4 ms; the WebView's LiveView socket heartbeat
+2.0–4.4 ms. A key handled by the page and acted on by the host
+(page → host → channel → mpv → host → page) is therefore about 10 ms
+plus render, which is why the remote's keys can go to the page rather
+than to libmpv.
+
+**Audio passthrough, first attempt.** `audio-spdif=ac3,dts` set over the
+channel before `loadfile` of the DTS-HD MA remux: mpv chose the
+`spdif_dts` decoder and playback stalled — `time-pos` fixed at the
+resume position for 90 s, `current-ao` and `audio-out-params`
+unavailable, no video advance; the TV's own log read
+`SVServ_TvSpeakerController: PassThroughMode = Off`. The binding
+forwards no `ao` log lines, so the AO's refusal is inferred. Without the
+option the same file plays through `audiotrack` as `s16`, 6 channels.
+Next: the Sony's digital audio output set to passthrough, then the same
+command. Note that the option stayed on the long-lived instance across
+`Sessions.stop` and a second viewing (the second window stalled the
+same way until the process was restarted): every `set_property` over
+the channel is for the player's life, which is why the host now sends a
+viewing's options per file on the `loadfile` (campaign decision,
+2026-10-22).
+
+**Rig note.** `mc-tv launch` on an app that is already running does not
+reload the page (`am start` on the running activity): injected elements
+from an earlier window survive. `mc-tv stop` first for a clean page and
+a clean libmpv.
 
 ## How the surface reaches mpv
 

@@ -85,8 +85,10 @@ class MainActivity : Activity() {
         if (channel == null) channel = Channel(url, player).also { it.start() }
     }
 
+    // The page stays over the video: it is the TV's OSD (campaign M5). The
+    // callback remains the shell's hook for a viewing's start and end.
     private fun onViewingChanged(viewing: Boolean) {
-        runOnUiThread { webView.visibility = if (viewing) View.GONE else View.VISIBLE }
+        Log.i(if (viewing) "shell: viewing started, page stays up" else "shell: viewing ended")
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
