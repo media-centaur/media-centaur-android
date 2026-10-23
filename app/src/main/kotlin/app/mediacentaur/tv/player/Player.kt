@@ -54,6 +54,9 @@ class Player(
         "cache" to "yes",
         "demuxer-max-bytes" to (150L * 1024 * 1024).toString(),
         "demuxer-readahead-secs" to "20",
+        // audiotrack underran once at every start with mpv's 0.2 s default
+        // (the Sony, 2026-10-23); half a second starts clean.
+        "audio-buffer" to "0.5",
     )
 
     // --- Mpv ---

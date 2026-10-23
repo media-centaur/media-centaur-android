@@ -50,8 +50,9 @@ does not do.
 
 **Audio.** DTS-HD MA 5.1 is decoded by FFmpeg and output as 16-bit PCM,
 6 channels, 48 kHz through `ao=audiotrack` (`audio-params/format=s32p`
-in, `audio-out-params/format=s16` out). mpv logs an audio underrun at
-each start.
+in, `audio-out-params/format=s16` out). With mpv's default 0.2 s audio
+buffer the track underran once at each start; `audio-buffer=0.5`
+(`Player.instanceOptions`) starts clean (measured 2026-10-23).
 
 Bitstream passthrough is possible in principle and untested on this
 panel: `ao_audiotrack.c` (mpv 0.41) opens the track with
