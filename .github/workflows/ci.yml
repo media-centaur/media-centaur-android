@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    name: Unit tests and debug build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # AGP reads the SDK's location from local.properties before ANDROID_HOME,
+      # and mise.toml points ANDROID_HOME at a contributor's ~/Android/Sdk,
+      # which the runner does not have. The runner's own SDK is at
+      # ANDROID_SDK_ROOT; AGP downloads any platform or build-tools it lacks
+      # there, because the image has the licences accepted.
+      - name: Point Gradle at the runner's Android SDK
+        run: echo "sdk.dir=${ANDROID_SDK_ROOT:-$ANDROID_HOME}" > local.properties
+
+      - name: Toolchain from mise.toml
+        uses: jdx/mise-action@v5
+
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Unit tests and debug build
+        run: ./gradlew --no-daemon test assembleDebug

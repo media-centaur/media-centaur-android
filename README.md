@@ -5,6 +5,11 @@ a WebView shell showing the host's UI, with an embedded libmpv that the host
 drives over a WebSocket speaking mpv's JSON IPC. The TV renders; the host
 decides.
 
+Users install it from the [latest release](https://github.com/media-centaur/media-centaur-android/releases/latest);
+the wiki's [Android TV App](https://github.com/media-centaur/media-centaur/wiki/Android-TV-App)
+page is the guide. This repository is named for its platform: a phone or
+tablet variant would share this Gradle project and its libmpv.
+
 This is the contributor guide. The contract both codebases follow is the
 host repository's `docs/superpowers/specs/2026-10-22-remote-players-protocol-design.md`;
 the rollout is its `campaigns/remote-players.md`. What is known about
@@ -25,8 +30,18 @@ whenever a measurement settles a question.
 
 ## Build, install, drive
 
-Everything goes through `mc-tv` (`~/scripts/agents/mc-tv`), which runs each tool
-under this repository's `mise.toml`:
+A shell inside the repository has the toolchain (`mise` activates it), so the
+Gradle wrapper is all a contributor needs:
+
+```
+./gradlew test assembleDebug          # what CI runs on every push
+adb install -r app/build/outputs/apk/debug/media-centaur-tv-<version>-debug.apk
+./gradlew assembleRelease             # unsigned without the MC_ANDROID_* variables below
+```
+
+The author's device rig, `mc-tv` (`~/scripts/agents/mc-tv` on the author's
+machine, not part of this repository), wraps the same commands with install,
+launch, key presses, screen capture, logs and the emulator:
 
 ```
 mc-tv setup                     # one-time SDK install
@@ -41,8 +56,35 @@ mc-tv webview                   # forward the WebView's DevTools socket to 127.0
 mc-tv -e …                      # the same against the emulator (mc-tv emulator start)
 ```
 
-`./gradlew assembleDebug` from a shell inside the repository works the same
-way, because `mise` activates the toolchain there.
+## Release
+
+A release is a tag; nothing is built or uploaded by hand.
+
+1. Set `appVersionName` in `app/build.gradle.kts` (the one version source;
+   `versionCode` is derived from it) and write the `## v<version>` section
+   in `CHANGELOG.md` — the release workflow refuses a tag without one.
+2. Commit, tag `v<version>`, push the tag.
+3. `.github/workflows/release.yml` checks the tag against `appVersionName`,
+   builds the signed universal APK (every ABI libmpv ships, one file for any
+   TV), and publishes `media-centaur-tv-<version>-release.apk` with
+   `SHA256SUMS` and the CHANGELOG section as the GitHub Release.
+
+Signing is a property of the environment, not a build type of its own:
+`assembleRelease` is signed when these four variables are set and unsigned
+otherwise. CI takes them from repository secrets of the same names (the
+keystore itself as `MC_ANDROID_KEYSTORE_BASE64`, decoded into
+`MC_ANDROID_KEYSTORE` at run time):
+
+| Variable | Meaning |
+|---|---|
+| `MC_ANDROID_KEYSTORE` | Path to the PKCS12 keystore |
+| `MC_ANDROID_KEYSTORE_PASSWORD` | Its password |
+| `MC_ANDROID_KEY_ALIAS` | The signing key's alias |
+| `MC_ANDROID_KEY_PASSWORD` | The key's password |
+
+The keystore is the app's identity: an APK signed with another key cannot
+upgrade an installed one. The author holds it outside the repository
+(`*.jks` is ignored) with a backup; a lost key means a new application id.
 
 ## Layout
 
