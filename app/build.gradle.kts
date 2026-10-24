@@ -40,6 +40,7 @@ android {
         targetSdk = 36
         versionName = appVersionName
         versionCode = versionCodeFrom(appVersionName)
+        manifestPlaceholders["appLabel"] = "Media Centaur"
     }
 
     buildFeatures {
@@ -58,6 +59,13 @@ android {
     }
 
     buildTypes {
+        // The debug build installs beside the release one, so the test rig
+        // (mc-tv-stress) can drive an inspectable app against the simulated
+        // host while the owner's release app keeps its own host and pairing.
+        debug {
+            applicationIdSuffix = ".debug"
+            manifestPlaceholders["appLabel"] = "Media Centaur (debug)"
+        }
         release {
             isMinifyEnabled = false
             if (releaseKeystore != null) {

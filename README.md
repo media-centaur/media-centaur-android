@@ -56,6 +56,14 @@ mc-tv webview                   # forward the WebView's DevTools socket to 127.0
 mc-tv -e …                      # the same against the emulator (mc-tv emulator start)
 ```
 
+### The debug build beside the release one
+
+A debug build installs as `app.mediacentaur.tv.debug`, labelled "Media
+Centaur (debug)", next to the release app rather than over it. It is the
+build with WebView debugging, so the author's rig (`mc-tv`, with
+`MC_TV_APP=debug`) can read its page, and `mc-tv-stress` drives it against
+a simulated host while the release app keeps its own host and pairing.
+
 ## Release
 
 A release is a tag; nothing is built or uploaded by hand.
