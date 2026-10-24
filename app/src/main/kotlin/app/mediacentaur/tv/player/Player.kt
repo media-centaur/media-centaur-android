@@ -2,8 +2,11 @@ package app.mediacentaur.tv.player
 
 import android.content.Context
 import android.util.Log as AndroidLog
+import android.view.Gravity
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import android.view.View
+import android.widget.FrameLayout
 import app.mediacentaur.tv.Log
 import dev.jdtech.mpv.MPVLib
 
@@ -18,10 +21,16 @@ import dev.jdtech.mpv.MPVLib
  * until mpv is idle again; a stop asked for by the host (`quit`) ends with
  * reason `stop`, which the binding does not forward and [Player] supplies.
  * No key reaches mpv: the remote's keys go to the page.
+ *
+ * The surface takes the picture's shape: the player observes
+ * `video-params/aspect` for itself and sizes the surface to it within its
+ * parent ([SurfaceFit]), since on the native path the compositor scales the
+ * frames to the surface's bounds. That property is the player's own, like
+ * `idle-active`, and never reaches the host.
  */
 class Player(
     context: Context,
-    surfaceView: SurfaceView,
+    private val surfaceView: SurfaceView,
     private val onViewingChanged: (Boolean) -> Unit,
 ) : Mpv, SurfaceHolder.Callback, MPVLib.EventObserver, MPVLib.LogObserver {
     private val lib: MPVLib = MPVLib.create(context) ?: error("libmpv could not be loaded")
@@ -32,13 +41,20 @@ class Player(
 
     @Volatile private var stopRequested = false
 
+    /** The playing picture's display aspect ratio; 0.0 until a video reports one. */
+    @Volatile private var aspect = 0.0
+
     init {
         for ((name, value) in instanceOptions()) lib.setOptionString(name, value)
         lib.addObserver(this)
         lib.addLogObserver(this)
         lib.init()
         lib.observeProperty("idle-active", Mpv.Format.FLAG)
+        lib.observeProperty(ASPECT, Mpv.Format.DOUBLE)
         surfaceView.holder.addCallback(this)
+        (surfaceView.parent as View).addOnLayoutChangeListener { _, l, t, r, b, oldL, oldT, oldR, oldB ->
+            if (r - l != oldR - oldL || b - t != oldB - oldT) fitSurface()
+        }
         Log.i("player: libmpv ${lib.getPropertyString("mpv-version")}")
     }
 
@@ -96,9 +112,27 @@ class Player(
         lib.setPropertyString("vo", "mediacodec_embed")
     }
 
-    // The native path needs no surface size: the decoder writes the video's
-    // own size and the compositor scales it to the panel.
+    // The native path reads no surface size: the decoder writes the video's
+    // own size and the compositor scales it to the surface's bounds, which
+    // fitSurface keeps in the picture's shape.
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
+
+    // Runs on the main thread (a property event arrives on libmpv's). The
+    // parent is the full window; the surface is as large as the picture's
+    // shape allows inside it, centred. Nothing changes when the size holds.
+    private fun fitSurface() {
+        surfaceView.post {
+            val parent = surfaceView.parent as? View ?: return@post
+            val (width, height) = SurfaceFit.size(aspect, parent.width, parent.height)
+            val params = surfaceView.layoutParams as FrameLayout.LayoutParams
+            if (params.width == width && params.height == height) return@post
+            params.width = width
+            params.height = height
+            params.gravity = Gravity.CENTER
+            surfaceView.layoutParams = params
+            Log.i("player: surface ${width}x$height for aspect $aspect")
+        }
+    }
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         lib.setPropertyString("vo", "null")
@@ -108,9 +142,21 @@ class Player(
 
     // --- events from libmpv ---
 
-    override fun eventProperty(property: String) = forward(property, null)
+    override fun eventProperty(property: String) {
+        // The aspect has no value between files; the surface keeps its shape
+        // until the next picture reports one.
+        if (property == ASPECT) return
+        forward(property, null)
+    }
     override fun eventProperty(property: String, value: Long) = forward(property, value)
-    override fun eventProperty(property: String, value: Double) = forward(property, value)
+    override fun eventProperty(property: String, value: Double) {
+        if (property == ASPECT) {
+            aspect = value
+            fitSurface()
+            return
+        }
+        forward(property, value)
+    }
     override fun eventProperty(property: String, value: String) = forward(property, value)
 
     override fun eventProperty(property: String, value: Boolean) {
@@ -141,6 +187,10 @@ class Player(
     // when mpv moves straight into the next playlist entry), and the host
     // treats every reason but stop/quit alike.
     private fun endReason(): String = if (stopRequested) "stop" else "eof"
+
+    private companion object {
+        const val ASPECT = "video-params/aspect"
+    }
 
     private fun setViewing(value: Boolean) {
         if (viewing == value) return
