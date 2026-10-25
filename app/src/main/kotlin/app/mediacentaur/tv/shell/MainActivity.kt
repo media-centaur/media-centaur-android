@@ -20,7 +20,8 @@ import app.mediacentaur.tv.player.Player
  * The page stays up during a viewing — it is the TV's OSD — and every
  * remote key goes to it; Back goes to the page as its BACK action, which
  * closes an open menu or stops the viewing through the host. Nothing is
- * sent to mpv from here. Launch with `--es host <url>` to set the address
+ * sent to mpv from here. Back with nothing left to peel finishes the
+ * activity (the shell's `onLeave`). Launch with `--es host <url>` to set the address
  * without typing (`mc-tv launch --host`).
  */
 class MainActivity : Activity() {
@@ -41,7 +42,7 @@ class MainActivity : Activity() {
         addressField = findViewById(R.id.address_field)
         hostAddress = HostAddress(this)
         player = Player(this, findViewById<SurfaceView>(R.id.player_surface), onViewingChanged = ::onViewingChanged)
-        shell = Shell(webView, onPaired = ::onPaired)
+        shell = Shell(webView, onPaired = ::onPaired, onLeave = ::finish)
         findViewById<Button>(R.id.address_button).setOnClickListener { submitAddress() }
         addressField.setOnEditorActionListener { _, _, _ -> submitAddress(); true }
         takeHostFrom(intent)

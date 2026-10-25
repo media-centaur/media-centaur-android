@@ -2,6 +2,7 @@ package app.mediacentaur.tv.shell
 
 import android.net.Uri
 import android.webkit.CookieManager
+import android.webkit.JavascriptInterface
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -18,9 +19,20 @@ import app.mediacentaur.tv.Log
  * the channel can open. Two keys the WebView swallows reach the page as
  * synthetic keydowns the host's input system knows: Back as Escape (its
  * BACK action) and Menu as ContextMenu (the track menu during a viewing).
+ *
+ * Back leaves the app, as the platform's Back does, when the page has
+ * nothing left to peel: the page calls `MediaCentaurTV.leave()` (a
+ * JavaScript interface) from its main menu, and a page without the input
+ * system (the pairing page, an error) leaves on the first Back. Google
+ * Play's TV review requires it (TV-DB).
  */
-class Shell(private val webView: WebView, private val onPaired: () -> Unit) {
+class Shell(
+    private val webView: WebView,
+    private val onPaired: () -> Unit,
+    private val onLeave: () -> Unit,
+) {
     init {
+        webView.addJavascriptInterface(ShellInterface(), "MediaCentaurTV")
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
         CookieManager.getInstance().setAcceptCookie(true)
         // Chromium learns transparency only from this call, never from the XML background;
@@ -61,7 +73,11 @@ class Shell(private val webView: WebView, private val onPaired: () -> Unit) {
         webView.loadUrl(url)
     }
 
-    fun back() = key("Escape")
+    fun back() {
+        webView.evaluateJavascript(
+            "document.querySelector('[phx-hook=\"InputSystem\"]') ? (${keyScript("Escape")}, 'page') : 'leave'",
+        ) { result -> if (result == "\"leave\"") onLeave() }
+    }
 
     fun menu() = key("ContextMenu")
 
@@ -71,9 +87,17 @@ class Shell(private val webView: WebView, private val onPaired: () -> Unit) {
     // document-targeted keydown threw before the key was seen (the Sony,
     // 2026-10-22).
     private fun key(name: String) {
-        webView.evaluateJavascript(
-            "(document.activeElement || document.body).dispatchEvent(new KeyboardEvent('keydown', {key: '$name', bubbles: true, cancelable: true}))",
-            null,
-        )
+        webView.evaluateJavascript(keyScript(name), null)
+    }
+
+    private fun keyScript(name: String) =
+        "(document.activeElement || document.body).dispatchEvent(new KeyboardEvent('keydown', {key: '$name', bubbles: true, cancelable: true}))"
+
+    // Called on a WebView binder thread; the activity is left on the UI thread.
+    private inner class ShellInterface {
+        @JavascriptInterface
+        fun leave() {
+            webView.post { onLeave() }
+        }
     }
 }
