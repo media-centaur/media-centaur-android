@@ -4,6 +4,12 @@ User-facing release notes for the Media Centaur TV app. Each `## v<version>`
 section is the text of that release's GitHub Release page; the release
 workflow refuses a tag without one. Internal changes stay in the git history.
 
+## v0.1.2 — 2026-10-25
+
+### Fixed
+
+- **Back leaves the app.** Pressing Back from the main menu now returns to the TV's home screen, as in any other TV app; before, Back only moved between the page and the menu. On the pairing page, Back leaves straight away.
+
 ## v0.1.1 — 2026-10-24
 
 ### Fixed

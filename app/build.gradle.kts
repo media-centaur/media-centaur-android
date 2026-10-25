@@ -13,7 +13,7 @@ plugins {
 // The one version source. A release is the tag `v<versionName>`; CI checks the
 // two agree. `versionCode` is derived so an upgrade install always climbs and
 // nobody keeps two fields in step: 0.1.0 → 100, 1.2.3 → 10203.
-val appVersionName = "0.1.1"
+val appVersionName = "0.1.2"
 
 fun versionCodeFrom(name: String): Int {
     val (major, minor, patch) = name.split(".").map(String::toInt)
