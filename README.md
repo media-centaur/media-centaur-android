@@ -5,18 +5,72 @@ a WebView shell showing the host's UI, with an embedded libmpv that the host
 drives over a WebSocket speaking mpv's JSON IPC. The TV renders; the host
 decides.
 
-Users install it from the [latest release](https://github.com/media-centaur/media-centaur-android/releases/latest);
-the wiki's [Android TV App](https://github.com/media-centaur/media-centaur/wiki/Android-TV-App)
-page is the guide. This repository is named for its platform: a phone or
-tablet variant would share this Gradle project and its libmpv.
+Installing and pairing it is [below](#install-on-a-tv); the wiki's
+[Android TV App](https://github.com/media-centaur/media-centaur/wiki/Android-TV-App)
+page is the user guide, with how playback and the remote behave. This
+repository is named for its platform: a phone or tablet variant would share
+this Gradle project and its libmpv.
 
-This is the contributor guide. The contract both codebases follow is the
+The rest of this file is the contributor guide. The contract both codebases follow is the
 host repository's `docs/superpowers/specs/2026-10-22-remote-players-protocol-design.md`;
 the rollout is its `campaigns/remote-players.md`. What is known about
 libmpv on the TV itself — the two render paths, HDR, resolution, audio,
 throughput, the long-lived instance's pitfalls, what to sample — is
 [`docs/playback-on-android.md`](docs/playback-on-android.md); add to it
 whenever a measurement settles a question.
+
+## Install on a TV
+
+The app is not on Google Play, and does not need to be: every release is an
+APK you install yourself. Download `media-centaur-tv-<version>-release.apk`
+from the [latest release](https://github.com/media-centaur/media-centaur-android/releases/latest)
+(one universal file for any Android TV or Google TV on Android 8.0 or newer;
+`SHA256SUMS` beside it) and put it on the TV in one of two ways.
+
+**From a computer with `adb`** (Android's platform tools):
+
+1. On the TV: Settings → System → About → press **Build** seven times to turn
+   on Developer options, then Settings → System → Developer options →
+   **ADB debugging** on. Note the TV's IP address under Settings → Network &
+   Internet.
+2. On the computer:
+
+   ```sh
+   adb connect <tv-ip>:5555        # accept the prompt on the TV
+   adb install media-centaur-tv-<version>-release.apk
+   ```
+
+**From a USB stick:**
+
+1. Copy the APK to a USB stick and plug it into the TV.
+2. Open the stick with a file manager app (the TV has none built in; any from
+   the TV's app store does). The first time, the TV asks to allow that app to
+   install unknown apps: Settings → Apps → Security & restrictions →
+   **Unknown sources**.
+3. Open the APK and choose **Install**.
+
+The app appears on the TV's home screen as **Media Centaur**.
+
+### First run
+
+The TV needs a Media Centaur install on the same network, listening on it:
+`bind = "0.0.0.0"` in the configuration file, with the **Remote players**
+feature on (the default).
+
+1. Open the app. It asks for the address of the computer running Media
+   Centaur, `<ip>:<port>` (`192.168.1.5:2160`, say). Press **Connect**.
+2. On the computer, open **Settings → Players** and press **Start pairing**.
+   A six-digit code shows; it works for five minutes.
+3. On the TV, enter a name for it and the code, and press **Pair**.
+
+The TV then shows the profile picker, and the install's pages after it. A
+paired TV stays paired until it is removed under Settings → Players.
+
+### Updates
+
+The app does not update itself. Install the new release's APK the same way;
+it replaces the installed app and keeps the pairing. Every release is signed
+with the same key, which is what lets a new APK install over the old one.
 
 ## Toolchain
 
