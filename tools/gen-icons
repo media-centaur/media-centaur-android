@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""The app's launcher icon and TV banner from the brand's centaur mark.
+
+Source: art/centaur-light.png — the host's `centaur-logo-light.png` (the
+mark in the brand's cream, #F6E0C0, on transparent). Outputs, under
+app/src/main/res:
+
+  mipmap-<dpi>/ic_launcher_foreground.png   the adaptive icon's foreground:
+      the mark centred in the 108 dp canvas, inside the 66 dp safe circle
+  mipmap-<dpi>/ic_launcher_monochrome.png   the same silhouette in white,
+      for a themed (Android 13+) launcher to tint
+  drawable-<dpi>/banner.png                 the leanback banner, 320×180 dp:
+      the mark beside MEDIA CENTAUR in the brand's quiet caps
+
+The background colour lives in values/colors.xml (ic_launcher_background,
+the brand navy #091F3F), so the icon layers are the art alone. Run from
+the repo root after changing the art; the PNGs are committed.
+"""
+
+from pathlib import Path
+
+from PIL import Image, ImageDraw, ImageFont, ImageOps
+
+ROOT = Path(__file__).resolve().parent.parent
+RES = ROOT / "app/src/main/res"
+ART = Image.open(ROOT / "art/centaur-light.png").convert("RGBA")
+CREAM = (0xF6, 0xE0, 0xC0, 255)
+NAVY = (0x09, 0x1F, 0x3F, 255)
+DENSITIES = {"mdpi": 1, "hdpi": 1.5, "xhdpi": 2, "xxhdpi": 3, "xxxhdpi": 4}
+
+# The art trimmed to its own box, so the centaur — not its margins — is
+# what fits the safe zone.
+BBOX = ART.getchannel("A").getbbox()
+MARK = ART.crop(BBOX)
+
+
+def recolour(image, rgba):
+    alpha = image.getchannel("A")
+    solid = Image.new("RGBA", image.size, rgba)
+    solid.putalpha(alpha)
+    return solid
+
+
+def fit(image, box):
+    """The mark scaled to fit a box (w, h), high quality, aspect kept."""
+    scale = min(box[0] / image.width, box[1] / image.height)
+    size = (max(1, round(image.width * scale)), max(1, round(image.height * scale)))
+    return image.resize(size, Image.LANCZOS)
+
+
+def foreground(px, colour):
+    """108 dp canvas at px per dp; the mark in a 64 dp box centred — the
+    66 dp safe circle a launcher may mask to just clears the arrow's tip
+    and the tail, and on the squircles most launchers draw the figure
+    stands as large as its neighbours' marks (checked on the owner's
+    phone, 2026-11-08: 60 dp floated small)."""
+    canvas = Image.new("RGBA", (round(108 * px), round(108 * px)), (0, 0, 0, 0))
+    mark = fit(recolour(MARK, colour), (round(64 * px), round(64 * px)))
+    canvas.alpha_composite(mark, ((canvas.width - mark.width) // 2, (canvas.height - mark.height) // 2))
+    return canvas
+
+
+def font(size):
+    for name in ("Roboto-Medium.ttf", "Roboto-Regular.ttf", "DejaVuSans-Bold.ttf"):
+        try:
+            return ImageFont.truetype(name, size)
+        except OSError:
+            continue
+    return ImageFont.load_default()
+
+
+def banner(px):
+    """320×180 dp at px per dp: navy, the mark on the left third, the
+    wordmark in quiet caps on the right — the host's Brand component."""
+    w, h = round(320 * px), round(180 * px)
+    canvas = Image.new("RGBA", (w, h), NAVY)
+    mark = fit(recolour(MARK, CREAM), (round(120 * px), round(130 * px)))
+    canvas.alpha_composite(mark, (round(28 * px), (h - mark.height) // 2))
+
+    draw = ImageDraw.Draw(canvas)
+    size = round(22 * px)
+    tracking = round(size * 0.22)
+    f = font(size)
+    lines = ["MEDIA", "CENTAUR"]
+    widths = [sum(draw.textlength(ch, font=f) for ch in line) + tracking * (len(line) - 1) for line in lines]
+    block_w = max(widths)
+    line_h = round(size * 1.35)
+    x0 = round(170 * px)
+    y = (h - line_h * len(lines)) // 2
+    for line, width in zip(lines, widths):
+        x = x0 + (block_w - width) / 2
+        for ch in line:
+            draw.text((x, y), ch, font=f, fill=CREAM)
+            x += draw.textlength(ch, font=f) + tracking
+        y += line_h
+    return canvas
+
+
+def write(image, path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    image.save(path, optimize=True)
+
+
+def main():
+    for dpi, px in DENSITIES.items():
+        write(foreground(px, CREAM), RES / f"mipmap-{dpi}/ic_launcher_foreground.png")
+        write(foreground(px, (255, 255, 255, 255)), RES / f"mipmap-{dpi}/ic_launcher_monochrome.png")
+        write(banner(px), RES / f"drawable-{dpi}/banner.png")
+
+    # Previews for a human eye: the adaptive icon under a circle and a
+    # squircle mask, and the banner, at xxhdpi.
+    out = ROOT / "build/icon-preview"
+    out.mkdir(parents=True, exist_ok=True)
+    px = 3
+    fg = foreground(px, CREAM)
+    icon = Image.new("RGBA", fg.size, NAVY)
+    icon.alpha_composite(fg)
+    # A launcher shows the inner 72 dp of the 108 dp canvas.
+    inset = round(18 * px)
+    shown = icon.crop((inset, inset, icon.width - inset, icon.height - inset))
+    for shape in ("circle", "squircle"):
+        mask = Image.new("L", shown.size, 0)
+        d = ImageDraw.Draw(mask)
+        if shape == "circle":
+            d.ellipse((0, 0, shown.width - 1, shown.height - 1), fill=255)
+        else:
+            d.rounded_rectangle((0, 0, shown.width - 1, shown.height - 1), radius=shown.width // 4, fill=255)
+        masked = shown.copy()
+        masked.putalpha(mask)
+        write(masked, out / f"icon-{shape}.png")
+    write(banner(px), out / "banner.png")
+    print(f"wrote mipmaps, banners and previews under {out}")
+
+
+if __name__ == "__main__":
+    main()

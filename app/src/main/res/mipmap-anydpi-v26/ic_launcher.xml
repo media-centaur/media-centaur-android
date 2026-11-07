@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The launcher icon: the brand's centaur mark (tools/gen-icons draws the
+     layers from art/centaur-light.png) in the brand's cream over its navy.
+     Adaptive, so every launcher's shape — circle, squircle, teardrop — keeps
+     the mark inside the safe zone; the monochrome layer is what a themed
+     launcher (Android 13+) tints. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
+</adaptive-icon>

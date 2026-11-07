@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The brand navy behind the launcher icon's centaur (the host's
+         favicon draws the same mark in the same navy). -->
+    <color name="ic_launcher_background">#091F3F</color>
+</resources>
