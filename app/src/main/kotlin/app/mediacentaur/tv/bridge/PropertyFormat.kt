@@ -13,7 +13,7 @@ import org.json.JSONObject
 object PropertyFormat {
     private val doubles = setOf("time-pos", "duration", "percent-pos", "playback-time", "time-remaining", "volume", "speed")
     private val longs = setOf("playlist-count", "playlist-pos", "chapter", "chapters", "playlist-current-pos")
-    private val flags = setOf("pause", "eof-reached", "idle-active", "core-idle", "seeking", "paused-for-cache", "mute")
+    private val flags = setOf("pause", "eof-reached", "idle-active", "core-idle", "seeking", "paused-for-cache", "mute", "user-data/fill-width")
     private val jsonText = setOf("track-list", "chapter-list", "playlist", "metadata", "video-params", "audio-params")
     private val keyValueLists = setOf("script-opts")
 

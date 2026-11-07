@@ -44,6 +44,9 @@ class Player(
     /** The playing picture's display aspect ratio; 0.0 until a video reports one. */
     @Volatile private var aspect = 0.0
 
+    /** The host's picture setting: fill the screen's width rather than fit the frame. */
+    @Volatile private var fillWidth = false
+
     init {
         for ((name, value) in instanceOptions()) lib.setOptionString(name, value)
         lib.addObserver(this)
@@ -51,6 +54,7 @@ class Player(
         lib.init()
         lib.observeProperty("idle-active", Mpv.Format.FLAG)
         lib.observeProperty(ASPECT, Mpv.Format.DOUBLE)
+        lib.observeProperty(FILL_WIDTH, Mpv.Format.FLAG)
         surfaceView.holder.addCallback(this)
         (surfaceView.parent as View).addOnLayoutChangeListener { _, l, t, r, b, oldL, oldT, oldR, oldB ->
             if (r - l != oldR - oldL || b - t != oldB - oldT) fitSurface()
@@ -123,14 +127,14 @@ class Player(
     private fun fitSurface() {
         surfaceView.post {
             val parent = surfaceView.parent as? View ?: return@post
-            val (width, height) = SurfaceFit.size(aspect, parent.width, parent.height)
+            val (width, height) = SurfaceFit.size(aspect, parent.width, parent.height, fillWidth)
             val params = surfaceView.layoutParams as FrameLayout.LayoutParams
             if (params.width == width && params.height == height) return@post
             params.width = width
             params.height = height
             params.gravity = Gravity.CENTER
             surfaceView.layoutParams = params
-            Log.i("player: surface ${width}x$height for aspect $aspect")
+            Log.i("player: surface ${width}x$height for aspect $aspect${if (fillWidth) ", filling the width" else ""}")
         }
     }
 
@@ -146,6 +150,7 @@ class Player(
         // The aspect has no value between files; the surface keeps its shape
         // until the next picture reports one.
         if (property == ASPECT) return
+        if (property == FILL_WIDTH) setFillWidth(false)
         forward(property, null)
     }
     override fun eventProperty(property: String, value: Long) = forward(property, value)
@@ -164,6 +169,7 @@ class Player(
             if (value && viewing) setViewing(false)
             return
         }
+        if (property == FILL_WIDTH) setFillWidth(value)
         forward(property, value)
     }
 
@@ -190,6 +196,13 @@ class Player(
 
     private companion object {
         const val ASPECT = "video-params/aspect"
+        const val FILL_WIDTH = "user-data/fill-width"
+    }
+
+    private fun setFillWidth(value: Boolean) {
+        if (fillWidth == value) return
+        fillWidth = value
+        fitSurface()
     }
 
     private fun setViewing(value: Boolean) {

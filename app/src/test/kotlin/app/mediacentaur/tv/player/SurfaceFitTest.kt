@@ -25,6 +25,17 @@ class SurfaceFitTest {
     }
 
     @Test
+    fun `filling the width keeps a 16 by 9 frame's width on a wider phone, past its height`() {
+        assertEquals(2293 to 1290, SurfaceFit.size(16.0 / 9.0, 2293, 1080, fillWidth = true))
+    }
+
+    @Test
+    fun `filling the width changes nothing for a frame already as wide as the panel`() {
+        assertEquals(1920 to 803, SurfaceFit.size(2.39, 1920, 1080, fillWidth = true))
+        assertEquals(1920 to 1080, SurfaceFit.size(16.0 / 9.0, 1920, 1080, fillWidth = true))
+    }
+
+    @Test
     fun `an unusable aspect or an unlaid-out parent gives the parent's size`() {
         assertEquals(1920 to 1080, SurfaceFit.size(0.0, 1920, 1080))
         assertEquals(1920 to 1080, SurfaceFit.size(Double.NaN, 1920, 1080))

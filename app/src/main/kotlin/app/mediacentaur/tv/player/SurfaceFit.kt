@@ -10,16 +10,21 @@ import kotlin.math.roundToInt
  * screen (the owner's walk, 2026-10-24). The surface is therefore sized to
  * the video's display aspect ratio, as large as fits, centred: bars at the
  * sides for 4:3, above and below for a film wider than the panel.
+ *
+ * Filling the width (the host's `user-data/fill-width`, for a file whose
+ * frame carries black bars) sizes the surface to the parent's width instead,
+ * however tall that makes it: the parent clips what falls above and below.
  */
 object SurfaceFit {
     /**
      * Width and height for a picture of [aspect] (display width over height,
      * mpv's `video-params/aspect`) inside a [width]×[height] parent. An
      * unusable aspect or an unlaid-out parent gives the parent's own size.
+     * With [fillWidth] the picture keeps the parent's width whatever its height.
      */
-    fun size(aspect: Double, width: Int, height: Int): Pair<Int, Int> {
+    fun size(aspect: Double, width: Int, height: Int, fillWidth: Boolean = false): Pair<Int, Int> {
         if (width <= 0 || height <= 0 || aspect.isNaN() || aspect <= 0.0) return width to height
         val fitHeight = (width / aspect).roundToInt()
-        return if (fitHeight <= height) width to fitHeight else (height * aspect).roundToInt() to height
+        return if (fitHeight <= height || fillWidth) width to fitHeight else (height * aspect).roundToInt() to height
     }
 }
