@@ -27,6 +27,15 @@ import app.mediacentaur.tv.player.Player
  * sent to mpv from here. Back with nothing left to peel finishes the
  * activity (the shell's `onLeave`). Launch with `--es host <url>` to set the address
  * without typing (`mc-tv launch --host`).
+ *
+ * The activity owns the device's one channel and one mpv, so it is one
+ * instance for as long as the app is in use. `singleTask` hands a second
+ * launch (an icon tap after `am start`) to this instance's `onNewIntent`;
+ * two instances would hold two channels under one player id, each evicting
+ * the other on the host every second. `configChanges` keeps a dark-mode
+ * switch, a window resize, a rotation (Android 16 ignores the fixed
+ * orientation on large screens) or a keyboard from recreating it, which
+ * would destroy mpv mid-film; the WebView and the surface resize themselves.
  */
 class MainActivity : Activity() {
     private lateinit var hostAddress: HostAddress
