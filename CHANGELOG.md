@@ -4,6 +4,12 @@ User-facing release notes for the Media Centaur TV app. Each `## v<version>`
 section is the text of that release's GitHub Release page; the release
 workflow refuses a tag without one. Internal changes stay in the git history.
 
+## v0.3.0 — 2026-11-07
+
+### New
+
+- **Your Media Centaur install knows which device this is.** When the app connects, it tells the install its model, Android version and app version, and whether it is a TV, phone or tablet. Settings → Players and Status → Playback show them, so two players with similar names can be told apart. It needs Media Centaur 2.12.0.
+
 ## v0.2.0 — 2026-11-07
 
 ### New
