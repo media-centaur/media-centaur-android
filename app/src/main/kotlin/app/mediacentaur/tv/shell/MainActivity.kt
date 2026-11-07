@@ -7,11 +7,13 @@ import android.os.Bundle
 import android.view.KeyEvent
 import android.view.SurfaceView
 import android.view.View
+import android.view.WindowManager
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.webkit.WebView
 import android.widget.Button
 import android.widget.EditText
+import app.mediacentaur.tv.BuildConfig
 import app.mediacentaur.tv.Log
 import app.mediacentaur.tv.R
 import app.mediacentaur.tv.bridge.Channel
@@ -41,6 +43,7 @@ class MainActivity : Activity() {
         window.setFormat(android.graphics.PixelFormat.TRANSLUCENT)
         setContentView(R.layout.activity_main)
         hideSystemBars()
+        keepScreenOn(BuildConfig.DEBUG)
         webView = findViewById(R.id.web_view)
         addressScreen = findViewById(R.id.address_screen)
         addressField = findViewById(R.id.address_field)
@@ -118,9 +121,17 @@ class MainActivity : Activity() {
     }
 
     // The page stays over the video: it is the TV's OSD (campaign M5). The
-    // callback remains the shell's hook for a viewing's start and end.
+    // screen stays on while a viewing plays — a phone otherwise sleeps
+    // mid-film — and, on a debug build, whenever the app is in front, for
+    // a phone on the desk during development. Called on libmpv's thread.
     private fun onViewingChanged(viewing: Boolean) {
         Log.i(if (viewing) "shell: viewing started, page stays up" else "shell: viewing ended")
+        runOnUiThread { keepScreenOn(viewing || BuildConfig.DEBUG) }
+    }
+
+    private fun keepScreenOn(on: Boolean) {
+        if (on) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     // Back and Menu never reach the WebView as key events, so the shell hands
