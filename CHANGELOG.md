@@ -4,6 +4,13 @@ User-facing release notes for the Media Centaur TV app. Each `## v<version>`
 section is the text of that release's GitHub Release page; the release
 workflow refuses a tag without one. Internal changes stay in the git history.
 
+## v0.4.0 — 2026-11-08
+
+### New
+
+- **The app wears the centaur.** The launcher icon is Media Centaur's centaur in cream on navy, shaped to whatever your launcher uses (circle, squircle, themed); the TV's banner shows the centaur beside the name.
+- **The phone browses upright and plays in landscape.** On a phone the app now stays portrait while you browse and turns to landscape for the length of a film or an episode, as video apps do; a tablet follows how it is held. A TV is unchanged. The page reaches into the camera cutout, so nothing is wasted at the edge. With Media Centaur 2.13.0 the phone also gets a bottom bar, finger-sized controls and Back and ten-second skips on the player.
+
 ## v0.3.0 — 2026-11-07
 
 ### New
