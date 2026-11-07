@@ -2,10 +2,13 @@ package app.mediacentaur.tv.shell
 
 import android.app.Activity
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.SurfaceView
 import android.view.View
+import android.view.WindowInsets
+import android.view.WindowInsetsController
 import android.webkit.WebView
 import android.widget.Button
 import android.widget.EditText
@@ -37,6 +40,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         window.setFormat(android.graphics.PixelFormat.TRANSLUCENT)
         setContentView(R.layout.activity_main)
+        hideSystemBars()
         webView = findViewById(R.id.web_view)
         addressScreen = findViewById(R.id.address_screen)
         addressField = findViewById(R.id.address_field)
@@ -85,6 +89,32 @@ class MainActivity : Activity() {
     private fun onPaired() {
         val url = hostAddress.url ?: return
         if (channel == null) channel = Channel(url, player).also { it.start() }
+    }
+
+    // A phone's status and navigation bars take the screen from the picture
+    // and the page; hidden, a swipe from the edge shows them for a moment.
+    // A TV has neither, so this changes nothing there.
+    private fun hideSystemBars() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.setDecorFitsSystemWindows(false)
+            window.insetsController?.let {
+                it.hide(WindowInsets.Type.systemBars())
+                it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                or View.SYSTEM_UI_FLAG_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE)
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) hideSystemBars()
     }
 
     // The page stays over the video: it is the TV's OSD (campaign M5). The
