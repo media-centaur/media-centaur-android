@@ -21,10 +21,11 @@ import java.util.concurrent.TimeUnit
  * opened with the WebView's cookies so the host admits the paired player,
  * carrying one IPC frame per text message each way. Reconnects with
  * backoff from 1 s to 30 s whenever it drops; the host's pings are answered
- * by OkHttp. Every frame is logged at debug level: `>>` host to mpv,
+ * by OkHttp. The upgrade carries the device's declaration of itself
+ * (`DeviceDeclaration`). Every frame is logged at debug level: `>>` host to mpv,
  * `<<` mpv to host.
  */
-class Channel(hostUrl: String, mpv: Mpv) : WebSocketListener() {
+class Channel(hostUrl: String, mpv: Mpv, private val declaration: Map<String, String>) : WebSocketListener() {
     private val url = hostUrl.replaceFirst("http", "ws").trimEnd('/') + "/players/channel"
     private val timer = Executors.newSingleThreadScheduledExecutor()
     private val main = Handler(Looper.getMainLooper())
@@ -54,7 +55,8 @@ class Channel(hostUrl: String, mpv: Mpv) : WebSocketListener() {
     private fun connect() {
         if (stopped) return
         Log.i("channel: connecting $url")
-        socket = client.newWebSocket(Request.Builder().url(url).build(), this)
+        val request = Request.Builder().url(url).apply { declaration.forEach { (name, value) -> header(name, value) } }.build()
+        socket = client.newWebSocket(request, this)
     }
 
     private fun retry() {

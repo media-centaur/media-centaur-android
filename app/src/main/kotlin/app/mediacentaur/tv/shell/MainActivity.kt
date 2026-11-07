@@ -16,6 +16,7 @@ import android.widget.EditText
 import app.mediacentaur.tv.Log
 import app.mediacentaur.tv.R
 import app.mediacentaur.tv.bridge.Channel
+import app.mediacentaur.tv.bridge.DeviceDeclaration
 import app.mediacentaur.tv.player.Player
 
 /**
@@ -102,7 +103,7 @@ class MainActivity : Activity() {
 
     private fun onPaired() {
         val url = hostAddress.url ?: return
-        if (channel == null) channel = Channel(url, player).also { it.start() }
+        if (channel == null) channel = Channel(url, player, DeviceDeclaration.of(this)).also { it.start() }
     }
 
     // A phone's status and navigation bars take the screen from the picture
