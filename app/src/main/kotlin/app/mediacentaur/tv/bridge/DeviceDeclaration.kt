@@ -30,7 +30,8 @@ object DeviceDeclaration {
         )
     }
 
-    private fun formFactor(context: Context): FormFactor {
+    /** The device's form factor: a TV by its UI mode, a tablet by a 600 dp smallest width, else a phone. */
+    fun formFactor(context: Context): FormFactor {
         val uiMode = context.getSystemService(UiModeManager::class.java)?.currentModeType
         return when {
             uiMode == Configuration.UI_MODE_TYPE_TELEVISION -> FormFactor.TV

@@ -45,12 +45,15 @@ class MainActivity : Activity() {
     private lateinit var webView: WebView
     private lateinit var addressScreen: View
     private lateinit var addressField: EditText
+    private lateinit var formFactor: DeviceDeclaration.FormFactor
     private var channel: Channel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setFormat(android.graphics.PixelFormat.TRANSLUCENT)
         setContentView(R.layout.activity_main)
+        formFactor = DeviceDeclaration.formFactor(this)
+        requestedOrientation = Orientation.requested(formFactor, viewing = false)
         hideSystemBars()
         // The screen stays on while the app is in front: a phone otherwise
         // sleeps mid-film, and a work profile can cap its timeout. A setting
@@ -108,8 +111,17 @@ class MainActivity : Activity() {
 
     // A phone's status and navigation bars take the screen from the picture
     // and the page; hidden, a swipe from the edge shows them for a moment.
-    // A TV has neither, so this changes nothing there.
+    // The window also reaches into the camera cutout (the default letterboxes
+    // an immersive window away from it, leaving a dead strip): the page
+    // knows the cutout through `viewport-fit=cover` and keeps its chrome out
+    // of it with the safe-area insets. A TV has none of this, so nothing
+    // changes there.
     private fun hideSystemBars() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.attributes = window.attributes.apply {
+                layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(false)
             window.insetsController?.let {
@@ -132,10 +144,13 @@ class MainActivity : Activity() {
         if (hasFocus) hideSystemBars()
     }
 
-    // The page stays over the video: it is the TV's OSD (campaign M5). The
-    // callback remains the shell's hook for a viewing's start and end.
+    // The page stays over the video: it is the TV's OSD (campaign M5). A
+    // viewing turns the device to landscape for its life; its end hands the
+    // orientation back to the form factor's. Called from the player's
+    // thread; the window is the UI thread's.
     private fun onViewingChanged(viewing: Boolean) {
         Log.i(if (viewing) "shell: viewing started, page stays up" else "shell: viewing ended")
+        runOnUiThread { requestedOrientation = Orientation.requested(formFactor, viewing) }
     }
 
     // Back and Menu never reach the WebView as key events, so the shell hands
