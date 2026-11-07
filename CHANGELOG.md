@@ -4,6 +4,23 @@ User-facing release notes for the Media Centaur TV app. Each `## v<version>`
 section is the text of that release's GitHub Release page; the release
 workflow refuses a tag without one. Internal changes stay in the git history.
 
+## v0.2.0 — 2026-11-07
+
+### New
+
+- **Install it on your phone.** The app now installs and opens on an Android phone as well as a TV, from the same APK, and plays your library over Wi-Fi. Pair it once with your Media Centaur install, as on a TV. The phone's status and navigation bars are hidden while the app is open; swipe from the edge to show them for a moment.
+- **Fill width.** When you choose **Fill width** in the player's menu, the picture is enlarged to the screen's width, for films with black bars inside the picture itself. It needs Media Centaur 2.11.0.
+
+### Improved
+
+- **The screen stays on.** While the app is in front, the TV or phone no longer dims or sleeps partway through a film.
+
+### Fixed
+
+- **Videos the device cannot decode in hardware now play.** Some files, such as AV1 on a phone without an AV1 decoder or some older MPEG-4 releases, played their sound over a black picture. They now play, decoded in software.
+- **The app keeps playing through a theme change.** Switching between light and dark mode, or resizing the app's window, restarted the app and stopped the film. The film now keeps playing.
+- **Opening the app again no longer opens a second copy.** In some cases, opening the app while it was already running started a second copy behind the first. Both took turns controlling playback, and the screen could go black. Now the open app is brought to the front.
+
 ## v0.1.2 — 2026-10-25
 
 ### Fixed
