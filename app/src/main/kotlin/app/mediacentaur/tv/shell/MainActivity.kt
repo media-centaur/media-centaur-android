@@ -13,6 +13,7 @@ import android.view.WindowInsetsController
 import android.webkit.WebView
 import android.widget.Button
 import android.widget.EditText
+import app.mediacentaur.tv.BuildConfig
 import app.mediacentaur.tv.Log
 import app.mediacentaur.tv.R
 import app.mediacentaur.tv.bridge.Channel
@@ -26,8 +27,9 @@ import app.mediacentaur.tv.player.Player
  * remote key goes to it; Back goes to the page as its BACK action, which
  * closes an open menu or stops the viewing through the host. Nothing is
  * sent to mpv from here. Back with nothing left to peel finishes the
- * activity (the shell's `onLeave`). Launch with `--es host <url>` to set the address
- * without typing (`mc-tv launch --host`).
+ * activity (the shell's `onLeave`). A debug build launched with `--es host <url>`
+ * takes the address without typing (`mc-tv launch --host`); a release build
+ * ignores it, since the activity is exported and any app could send one.
  *
  * The activity owns the device's one channel and one mpv, so it is one
  * instance for as long as the app is in use. `singleTask` hands a second
@@ -77,6 +79,7 @@ class MainActivity : Activity() {
     }
 
     private fun takeHostFrom(intent: Intent?): Boolean {
+        if (!BuildConfig.DEBUG) return false
         val url = intent?.getStringExtra(EXTRA_HOST)?.let(HostAddress::normalize) ?: return false
         Log.i("host address from intent: $url")
         hostAddress.url = url

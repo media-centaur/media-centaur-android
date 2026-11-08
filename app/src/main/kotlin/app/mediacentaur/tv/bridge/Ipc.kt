@@ -12,7 +12,10 @@ import org.json.JSONObject
  * `quit` ends the viewing (`stop`), not the player. Property ids are the
  * host's, from its `observe_property`. `time-pos` is coalesced to one
  * event per second carrying the latest value; everything else passes as
- * it changes. [now] and [schedule] are injected for tests.
+ * it changes. The one mpv outlives every viewing and every channel, so a
+ * property is observed once: asked again, it reports its current value, as
+ * mpv does when an observation starts. [now] and [schedule] are injected for
+ * tests.
  */
 class Ipc(
     private val mpv: Mpv,
@@ -46,7 +49,9 @@ class Ipc(
                     val id = (args[1] as Number).toInt()
                     val property = args[2].toString()
                     ids[property] = id
-                    mpv.observe(property, PropertyFormat.of(property))
+                    if (!mpv.observe(property, PropertyFormat.of(property))) {
+                        emitPropertyChange(property, PropertyFormat.read(mpv, property))
+                    }
                     reply(request, "success", null)
                 }
                 "get_property" -> {

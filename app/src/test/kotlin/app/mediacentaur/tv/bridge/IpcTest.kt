@@ -12,6 +12,7 @@ class IpcTest {
     private class FakeMpv : Mpv {
         val commands = mutableListOf<List<String>>()
         val observed = mutableListOf<Pair<String, Int>>()
+        private val held = mutableSetOf<String>()
         val set = mutableListOf<Pair<String, Any>>()
         val strings = mutableMapOf<String, String>()
         val doubles = mutableMapOf<String, Double>()
@@ -26,7 +27,11 @@ class IpcTest {
         override fun setBoolean(name: String, value: Boolean) { set += name to value }
         override fun setLong(name: String, value: Long) { set += name to value }
         override fun setDouble(name: String, value: Double) { set += name to value }
-        override fun observe(name: String, format: Int) { observed += name to format }
+        override fun observe(name: String, format: Int): Boolean {
+            if (!held.add(name)) return false
+            observed += name to format
+            return true
+        }
         override fun stop() { stops++ }
     }
 
@@ -40,6 +45,29 @@ class IpcTest {
         }
         fun send(json: String) = ipc.handle(json)
         fun last() = out.last()
+    }
+
+    @Test
+    fun `a property already observed is not observed again and reports its value`() {
+        val rig = Rig()
+        rig.mpv.strings["path"] = "http://host/media/one"
+        rig.send("""{"command":["observe_property",12,"path"]}""")
+        rig.send("""{"command":["observe_property",12,"path"]}""")
+
+        assertEquals(1, rig.mpv.observed.size)
+        val report = rig.out.first { it.optString("event") == "property-change" }
+        assertEquals("path", report.getString("name"))
+        assertEquals("http://host/media/one", report.getString("data"))
+    }
+
+    @Test
+    fun `a property already observed with no value reports no data`() {
+        val rig = Rig()
+        rig.send("""{"command":["observe_property",12,"path"]}""")
+        rig.send("""{"command":["observe_property",12,"path"]}""")
+
+        val report = rig.out.first { it.optString("event") == "property-change" }
+        assertFalse(report.has("data"))
     }
 
     @Test

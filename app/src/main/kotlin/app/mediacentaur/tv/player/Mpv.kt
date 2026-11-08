@@ -15,7 +15,8 @@ interface Mpv {
     fun setBoolean(name: String, value: Boolean)
     fun setLong(name: String, value: Long)
     fun setDouble(name: String, value: Double)
-    fun observe(name: String, format: Int)
+    /** Observes [name] once for the instance's life; false when it already is. */
+    fun observe(name: String, format: Int): Boolean
 
     /** A deliberate stop of the current file; remembered so the end-file reason is `stop`. */
     fun stop()

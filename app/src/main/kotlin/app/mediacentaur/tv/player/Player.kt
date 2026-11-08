@@ -37,6 +37,8 @@ class Player(
     private val lib: MPVLib = MPVLib.create(context) ?: error("libmpv could not be loaded")
     override var listener: Mpv.Listener? = null
 
+    private val observed = java.util.Collections.synchronizedSet(HashSet<String>())
+
     @Volatile var viewing: Boolean = false
         private set
 
@@ -111,7 +113,13 @@ class Player(
     // The binding's integer setter takes an Int; mpv's int64 properties the host sets fit.
     override fun setLong(name: String, value: Long) = lib.setPropertyInt(name, value.toInt())
     override fun setDouble(name: String, value: Double) = lib.setPropertyDouble(name, value)
-    override fun observe(name: String, format: Int) = lib.observeProperty(name, format)
+    // libmpv has no unobserve and does not deduplicate: each call would add
+    // an observer that reports every change for the app's life.
+    override fun observe(name: String, format: Int): Boolean {
+        if (!observed.add(name)) return false
+        lib.observeProperty(name, format)
+        return true
+    }
 
     override fun stop() {
         stopRequested = true

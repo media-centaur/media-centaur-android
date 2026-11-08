@@ -37,7 +37,7 @@ class Channel(hostUrl: String, mpv: Mpv, private val declaration: Map<String, St
 
     @Volatile private var socket: WebSocket? = null
     @Volatile private var stopped = false
-    private var backoffMs = 1000L
+    private val backoff = Backoff()
 
     fun start() {
         stopped = false
@@ -61,14 +61,13 @@ class Channel(hostUrl: String, mpv: Mpv, private val declaration: Map<String, St
 
     private fun retry() {
         if (stopped) return
-        val delay = backoffMs
-        backoffMs = minOf(backoffMs * 2, 30_000L)
+        val delay = backoff.next()
         Log.i("channel: retrying in ${delay}ms")
         main.postDelayed({ connect() }, delay)
     }
 
     override fun onOpen(webSocket: WebSocket, response: Response) {
-        backoffMs = 1000L
+        backoff.reset()
         Log.i("channel: up")
         ipc.sink = { text ->
             Log.d("<< ${text.take(200)}")
