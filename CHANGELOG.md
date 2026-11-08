@@ -9,7 +9,7 @@ workflow refuses a tag without one. Internal changes stay in the git history.
 ### Fixed
 
 - **Reconnecting no longer doubles the app's playback updates.** Each time the app reconnected to your Media Centaur install during a film, it started sending the position and other player updates one more time over.
-- **Other apps on the device can no longer change which install the app connects to.** The release app used to accept a new host address from any other app on the device. It now takes the address only from pairing.
+- **Other apps on the device can no longer change which install the app connects to.** The release app used to accept a new host address from any other app on the device. It now uses only the address you type into the app.
 
 ## v0.4.0 — 2026-11-08
 
